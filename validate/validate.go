@@ -805,9 +805,13 @@ func SnpAttestation(attestation *spb.Attestation, options *Options) error {
 	}
 
 	// MaskChipId might be 1 for the host, so only check if the the CHIP_ID is not all zeros.
-	if info.SigningKey == abi.VcekReportSigner && !allZero(report.GetChipId()) && !bytes.Equal(report.GetChipId(), exts.HWID[:]) {
-		return fmt.Errorf("report field CHIP_ID %s is not the same as the VCEK certificate's HWID %s",
-			hex.EncodeToString(report.GetChipId()), hex.EncodeToString(exts.HWID[:]))
+	if info.SigningKey == abi.VcekReportSigner && !allZero(report.GetChipId()) {
+		paddedHWID := make([]byte, abi.ChipIDSize)
+		copy(paddedHWID, exts.HWID)
+		if !bytes.Equal(report.GetChipId(), paddedHWID) {
+			return fmt.Errorf("report field CHIP_ID %s is not the same as the VCEK certificate's HWID %s",
+				hex.EncodeToString(report.GetChipId()), hex.EncodeToString(exts.HWID))
+		}
 	}
 
 	return certTableOptions(attestation, options.CertTableOptions)
